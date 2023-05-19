@@ -1,5 +1,5 @@
-import  React, { useState } from 'react';
-
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
 import './App.scss';
 
 // Let's talk about using index.js and some other name in the component folder.
@@ -22,18 +22,18 @@ function App() {
     // mock output
     setLoading(true);
     setTimeout(() => {
-      const data = {
-        count: 2,
-        results: [
-          { name: 'fake thing 1', url: 'http://fakethings.com/1' },
-          { name: 'fake thing 2', url: 'http://fakethings.com/2' },
-        ],
-      };
-      setData(data);
       setRequestParamrs(requestParams);
       setLoading(false);
     }, 1000);
   }
+
+  useEffect(() => {
+    const getData = async () => {
+      let response = await axios(requestParams)
+      setData(response.data.results)
+    }
+    getData();
+  }, [requestParams]);
 
   return (
     <React.Fragment>
