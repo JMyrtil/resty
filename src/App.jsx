@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useReducer } from 'react';
 import axios from 'axios';
 import './App.scss';
 
@@ -10,39 +10,91 @@ import Header from './Components/Header';
 import Footer from './Components/Footer';
 import Form from './Components/Form';
 import Results from './Components/Results';
+import History from './Components/History';
+
+export const intitalState = {
+  data: null,
+  requestParams: {},
+  loading: false,
+  history: []
+}
+
+export const reducer = (state = intitalState, action) => {
+  switch (action.type) {
+    case 'START-REQUEST':
+      return {
+        ...state,
+        loading: true,
+        requestParams: action.payload
+      };
+    case 'FINISH-REQUEST':
+      return {
+        ...state,
+        loading: false,
+        data: action.payload,
+        history: [...state.history,
+        {
+          requestParams: { ...state.requestParams },
+          data: action.payload
+        }
+        ],
+      }
+    case 'CHANGE-HISTORY':
+      return {
+        ...state,
+        ...state.history[action.payload],
+      }
+
+    default:
+      return state;
+  }
+};
 
 function App() {
 
-  const [data, setData] = useState('');
-  const [requestParams, setRequestParamrs] = useState({});
-  const [loading, setLoading] = useState(false);
-
+  const [state, dispatch] = useReducer(reducer, intitalState);
 
   const callApi = (requestParams) => {
     // mock output
-    setLoading(true);
-    setTimeout(() => {
-      setRequestParamrs(requestParams);
-      setLoading(false);
-    }, 1000);
+    let action = {
+      type: 'START-REQUEST',
+      payload: requestParams
+    }
+    dispatch(action);
+  }
+
+  const changeHistory = (idx) => {
+    let action = {
+      type: 'START-REQUEST',
+      payload: idx,
+    }
+    dispatch(action);
   }
 
   useEffect(() => {
     const getData = async () => {
-      let response = await axios(requestParams)
-      setData(response.data.results)
+      if (state.requestParams.method && state.requestParams.url) {
+        let response = await axios(state.requestParams)
+        const data = response.data;
+        let action = {
+          type: 'FINISH-REQUEST',
+          payload: data,
+        }
+        dispatch(action);
+      }
     }
     getData();
-  }, [requestParams]);
+  }, [state.requestParams]);
 
   return (
     <React.Fragment>
       <Header />
-      <div>Request Method: {requestParams.method}</div>
-      <div>URL: {requestParams.url}</div>
-      <div>Sent data: {requestParams.textArea} </div>
+      <div>Request Method: {state.requestParams.method}</div>
+      <div>URL: {state.requestParams.url}</div>
+      <div>Sent data: {state.requestParams.textArea} </div>
       <Form handleApiCall={callApi} />
-      <Results data={data} loading={loading} />
+      <History history={state.history} changeHistory={changeHistory} />
+      <Results data={state.data} loading={state.loading} />
       <Footer />
     </React.Fragment>
   );
